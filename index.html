@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dawn of Civilization - Evolution</title>
+    <style>
+        :root { 
+            --neon: #00d4ff;
+            --stone-border: url('https://i.imgur.com/39S5u0O.png');
+            --glow: 0 0 15px rgba(0, 212, 255, 0.6);
+            --gold: #ffd700;
+        }
+        
+        body { margin: 0; background: #000; color: white; font-family: 'Arial Black', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+
+        #viewport { 
+            flex-grow: 1; position: relative; 
+            background: url('ui1.png') no-repeat center center; 
+            background-size: 95%; 
+            cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            padding: 20px 0;
+            transition: background 0.3s ease;
+            
+            /* ДОБАВЛЕНА РАМКА ИЗ ЛИАНЫ */
+            border: 25px solid transparent; /* Ширина рамки */
+            /* Ссылка на изображение лианы и параметры растягивания */
+            border-image: url('https://i.imgur.com/bKj3Xo6.png') 30 round; 
+            /* Дополнительный внешний отступ, чтобы рамка не "съедала" место внутри */
+            outline: 10px solid #000; 
+            outline-offset: -15px;
+        }
+
+        /* ОБЪЕДИНЕННАЯ ПАНЕЛЬ ВЕРХУ */
+        #top-hub {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 20px;
+            background: rgba(0,0,0,0.85);
+            padding: 8px 20px;
+            border: 6px solid transparent;
+            border-image: var(--stone-border) 30 stretch;
+            border-radius: 15px; z-index: 100;
+        }
+
+        #leaderboard { display: flex; gap: 15px; }
+        
+        .rank-item { font-size: 13px; text-transform: uppercase; white-space: nowrap; }
+        .rank-item span { color: var(--neon); }
+        .rank-item.player { border-bottom: 2px solid var(--gold); }
+
+        .btn-mute { 
+            background: #111; color: var(--neon); border: 2px solid; 
+            border-radius: 50%; width: 36px; height: 36px; cursor: pointer; 
+            font-size: 16px; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ОТОБРАЖЕНИЕ ОЧКОВ В ПАНЕЛИ */
+        .score-display {
+            padding: 0 15px;
+            border-right: 2px solid #333;
+            text-align: center;
+        }
+        .score-num { font-size: 24px; color: var(--neon); text-shadow: var(--glow); line-height: 1; }
+        .score-label { font-size: 9px; color: #666; display: block; }
+
+        .era-info { text-align: center; border-right: 2px solid #333; padding-right: 20px; }
+        .era-name { font-size: 14px; color: var(--gold); text-transform: uppercase; }
+
+        #page-flip {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; pointer-events: none; z-index: 101;
+            transition: opacity 0.15s;
+        }
+
+        #shop { 
+            width: 450px; background: rgba(5, 5, 5, 0.95);
+            border-left: 8px solid transparent;
+            border-image: var(--stone-border) 30 stretch;
+            padding: 20px; display: flex; flex-direction: column; gap: 12px;
+            z-index: 20; position: relative;
+        }
+
+        .plate {
+            flex: 1; background: #0a0a0a; border: 2px solid #333; border-radius: 12px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .plate.locked { cursor: pointer; }
+        .plate.ready-to-unlock { border: 2px solid var(--neon); box-shadow: var(--glow); }
+        .plate.unlocked { border: 2px solid var(--gold); }
+
+        .plate-hint { font-size: 13px; color: #aaa; text-transform: uppercase; text-align: center; font-weight: bold; padding: 10px; pointer-events: none; }
+        
+        .grid-upgrades { display: none; width: 100%; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px; box-sizing: border-box; }
+        .plate.unlocked .grid-upgrades { display: grid; }
+        .plate.unlocked .plate-hint { display: none; }
+
+        .buy-btn {
+            background: #111; border: 1px solid #444; color: #fff; 
+            padding: 10px 5px; font-size: 10px; cursor: pointer; border-radius: 6px; 
+            text-transform: uppercase; transition: 0.3s;
+        }
+        .buy-btn.can-buy { color: var(--gold); border-color: var(--gold); }
+
+        #news-bar { 
+            position: absolute; bottom: 35px; left: 2.5%; 
+            width: 95%; height: 50px; 
+            background: rgba(0,0,0,0.9); border-top: 5px solid transparent;
+            border-image: var(--stone-border) 30 stretch;
+            display: flex; align-items: center; overflow: hidden; 
+        }
+        #news-txt { white-space: nowrap; animation: marquee 30s linear infinite; color: var(--neon); font-size: 16px; font-weight: bold; width: 100%; text-align: center; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        .btn-ad { flex:1; padding:10px; font-size:10px; background:#111; border:1px solid var(--gold); color:var(--gold); border-radius:5px; cursor:pointer; }
+        .cheat-btn { position: absolute; bottom: 10px; left: 10px; opacity: 0.1; cursor: pointer; background: none; border: none; color: white; }
+    </style>
+</head>
+<body onclick="playInitialMusic()">
+
+    <div id="page-flip"></div>
+    <audio id="bg-music" src="music.mp3" loop></audio>
+
+    <div id="viewport" onclick="doTap()">
+        <div id="top-hub">
+            <button class="btn-mute" onclick="toggleAudio(event)">🔊</button>
+            
+            <div class="score-display">
+                <span class="score-num" id="display-score">0</span>
+                <span class="score-label">ЭНЕРГИЯ⚡</span>
+            </div>
+
+            <div class="era-info">
+                <div class="era-name" id="era-label">Каменный век</div>
+            </div>
+
+            <div id="leaderboard"></div>
+        </div>
+
+        <button class="cheat-btn" onclick="addMoney(event)">[DEBUG]</button>
+
+        <div id="news-bar">
+            <div id="news-txt">
+                Человек в гармонии с природой... | У человечества есть будущее... | Кликайте по заблокированным блокам, когда рамка загорится голубым!
+            </div>
+        </div>
+    </div>
+
+    <div id="shop">
+        <div class="plate locked" id="block1" onclick="tryUnlock(1, 30, 'ui2.png')">
+            <div class="plate-hint">Орудия труда<br>(Нужно 30 кликов)</div>
+            <div class="grid-upgrades">
+                <button class="buy-btn" onclick="upgrade(50, 2, 'ui2.png')">Рубило<br>50⚡</button>
+                <button class="buy-btn" onclick="upgrade(200, 5, 'ui3.png')">Копье<br>200⚡</button>
+                <button class="buy-btn" onclick="upgrade(600, 15, 'ui4.png')">Топор<br>600⚡</button>
+                <button class="buy-btn" style="border:none;" onclick="upgrade(1500, 1, 'ui5.png')">ОПЫТ +1<br>1.5к⚡</button>
+            </div>
+        </div>
+
+        <div class="plate locked" id="block2" onclick="tryUnlock(2, 2000, 'ui6.png')">
+            <div class="plate-hint">Покорение огня<br>(Нужно 2000 кликов)</div>
+            <div class="grid-upgrades">
+                <button class="buy-btn" onclick="upgrade(3000, 100, 'ui6.png')">Трение<br>3к⚡</button>
+                <button class="buy-btn" onclick="upgrade(8000, 300, 'ui7.png')">Огниво<br>8к⚡</button>
+                <button class="buy-btn" onclick="upgrade(20000, 800, 'ui8.png')">Костер<br>20к⚡</button>
+                <button class="buy-btn" style="border:none;" onclick="upgrade(50000, 5, 'ui9.png')">ЗНАНИЯ +5<br>50к⚡</button>
+            </div>
+        </div>
+
+        <div class="plate locked" id="block3" onclick="tryUnlock(3, 5000, 'ui10.png')">
+            <div class="plate-hint">Первые поселения<br>(Нужно 5000 кликов)</div>
+            <div class="grid-upgrades">
+                <button class="buy-btn" onclick="upgrade(100000, 2000, 'ui10.png')">Шалаш<br>100к⚡</button>
+                <button class="buy-btn" onclick="upgrade(250000, 5000, 'ui11.png')">Забор<br>250к⚡</button>
+                <button class="buy-btn" onclick="upgrade(600000, 15000, 'ui12.png')">Амбар<br>600к⚡</button>
+                <button class="buy-btn" style="border:none;" onclick="upgrade(1000000, 20, 'ui13.png')">КУЛЬТУРА +20<br>1М⚡</button>
+            </div>
+        </div>
+
+        <div class="ad-section" style="display: flex; gap: 5px; margin-top: auto;">
+             <button class="btn-ad" onclick="startAd(event, 1.5)">📺 БОНУС x1.5</button>
+             <button class="btn-ad" onclick="startAd(event, 2.0)" style="border-color: var(--neon); color: var(--neon);">📺 ПОХОД</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0, power = 1, totalClicks = 0, adMultiplier = 1;
+        let b1Score = 0, b2Score = 0;
+        let isMusicPlaying = false;
+        let gameStarted = false;
+
+        function playInitialMusic() {
+            if(!isMusicPlaying) {
+                document.getElementById('bg-music').play().catch(()=>{});
+                isMusicPlaying = true;
+            }
+        }
+
+        function doTap() {
+            playInitialMusic();
+            gameStarted = true;
+            score += (power * adMultiplier);
+            totalClicks++;
+            updateDisplay();
+        }
+
+        setInterval(() => {
+            if (gameStarted) {
+                b1Score += Math.random() * 20;
+                b2Score += Math.random() * 15;
+                updateDisplay();
+            }
+        }, 1000);
+
+        function updateLeaderboard() {
+            const players = [
+                { name: "Племя Атиллы", score: b1Score, isPlayer: false },
+                { name: "ВЫ", score: score, isPlayer: true },
+                { name: "Собиратели", score: b2Score, isPlayer: false }
+            ];
+            players.sort((a, b) => b.score - a.score);
+            const container = document.getElementById('leaderboard');
+            if(!container) return;
+            container.innerHTML = '';
+            players.forEach((p, index) => {
+                const item = document.createElement('div');
+                item.className = 'rank-item' + (p.isPlayer ? ' player' : '');
+                item.innerHTML = `${index + 1}. ${p.name}: <span>${Math.floor(p.score)}</span>⚡`;
+                container.appendChild(item);
+            });
+        }
+
+        function addMoney(e) {
+            e.stopPropagation();
+            score += 10000;
+            totalClicks += 2000;
+            updateDisplay();
+        }
+
+        function tryUnlock(num, req, bg) {
+            event.stopPropagation();
+            if (totalClicks >= req) {
+                let block = document.getElementById('block' + num);
+                block.classList.remove('locked', 'ready-to-unlock');
+                block.classList.add('unlocked');
+                triggerFlip(bg);
+                updateDisplay();
+            }
+        }
+
+        function triggerFlip(newBg) {
+            const flip = document.getElementById('page-flip');
+            flip.style.opacity = 1;
+            setTimeout(() => {
+                document.getElementById('viewport').style.backgroundImage = `url('${newBg}')`;
+                flip.style.opacity = 0;
+            }, 150);
+        }
+
+        function upgrade(cost, p, bgFile) {
+            event.stopPropagation();
+            if (score >= cost) {
+                score -= cost;
+                power += p;
+                triggerFlip(bgFile);
+                updateDisplay();
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('display-score').innerText = Math.floor(score);
+            updateLeaderboard();
+            checkBlockStatus(1, 30);
+            checkBlockStatus(2, 2000);
+            checkBlockStatus(3, 5000);
+            document.querySelectorAll('.buy-btn').forEach(btn => {
+                let costStr = btn.innerText.split('\n')[1] || btn.innerText;
+                let cost = parseFloat(costStr);
+                if (costStr.includes('к')) cost *= 1000;
+                if (costStr.includes('М')) cost *= 1000000;
+                if (score >= cost) {
+                    btn.classList.add('can-buy');
+                    btn.style.opacity = "1";
+                } else {
+                    btn.classList.remove('can-buy');
+                    btn.style.opacity = "0.5";
+                }
+            });
+        }
+
+        function checkBlockStatus(num, req) {
+            let el = document.getElementById('block' + num);
+            if (el && el.classList.contains('locked')) {
+                if (totalClicks >= req) {
+                    el.classList.add('ready-to-unlock');
+                } else {
+                    el.classList.remove('ready-to-unlock');
+                }
+            }
+        }
+
+        function toggleAudio(e) {
+            e.stopPropagation();
+            const m = document.getElementById('bg-music');
+            m.paused ? m.play() : m.pause();
+        }
+
+        function startAd(e, mult) {
+            e.stopPropagation();
+            adMultiplier = mult;
+            setTimeout(() => { adMultiplier = 1; }, 15000);
+        }
+        updateLeaderboard();
+    </script>
+</body>
+</html>
