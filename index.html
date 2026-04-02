@@ -1,207 +1,367 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dawn of Civilization - Evolution</title>
-    <style>
-        :root { 
-            --neon: #00d4ff;
-            --stone-border: url('https://i.imgur.com/39S5u0O.png');
-            --glow: 0 0 15px rgba(0, 212, 255, 0.6);
-            --gold: #ffd700;
-        }
-        
-        body { 
-            margin: 0; background: #000; color: white; 
-            font-family: 'Arial Black', sans-serif; 
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-            user-select: none; -webkit-tap-highlight-color: transparent;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dawn of Civilization</title>
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:  #e8c84a;
+  --gold2: #ffd700;
+  --neon:  #00d4ff;
+  --ember: #ff6b1a;
+  --moss:  #6ab55a;
+  --dirt:  #1a1208;
+  --parch: #f5e6c8;
+  --r: 14px;
 
-        /* ЭКРАН ЗАГРУЗКИ */
-        #loader {
-            position: fixed; inset: 0; background: #000; z-index: 1000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        #loader img { width: 180px; margin-bottom: 20px; }
-        .bar { width: 150px; height: 4px; background: #222; border-radius: 2px; overflow: hidden; }
-        .fill { width: 0%; height: 100%; background: var(--neon); animation: load 3s forwards; }
-        @keyframes load { to { width: 100%; } }
+  --top-h:    clamp(58px, 11vh, 80px);
+  --scene-h:  clamp(110px, 26vh, 240px);
+  --btn-h:    clamp(48px, 8.5vh, 68px);
+  --tick-h:   clamp(34px, 5.5vh, 46px);
+  --ad-h:     clamp(42px, 7vh, 60px);
+  --gap:      clamp(4px, 1vh, 9px);
+}
 
-        /* ОСНОВНОЙ КОНТЕЙНЕР */
-        #main-container {
-            display: flex; flex: 1; width: 100%; height: 100%;
-        }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--dirt);font-family:'Crimson Text',serif;-webkit-tap-highlight-color:transparent;user-select:none;}
 
-        /* ИГРОВОЕ ПОЛЕ (VIEWPORT) */
-        #viewport { 
-            flex: 2; position: relative; 
-            background: url('ui1.png') no-repeat center center; background-size: cover; 
-            cursor: pointer; border: 15px solid transparent;
-            border-image: url('https://i.imgur.com/bKj3Xo6.png') 30 round;
-            display: flex; flex-direction: column; align-items: center;
-        }
+/* ── ЗАСТАВКА ── */
+#splash{position:fixed;inset:0;z-index:9999;background:var(--dirt);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .6s;}
+#splash img{width:clamp(150px,52vw,290px);animation:pls 2s ease-in-out infinite;}
+@keyframes pls{0%,100%{filter:drop-shadow(0 0 12px rgba(232,200,74,.4));}50%{filter:drop-shadow(0 0 28px rgba(232,200,74,.9));}}
+.spl-title{font-family:'Cinzel',serif;font-size:clamp(14px,4.5vw,20px);color:var(--gold);letter-spacing:3px;text-align:center;text-shadow:0 0 10px rgba(232,200,74,.5);}
+.spl-bar-w{width:clamp(160px,55vw,260px);height:5px;background:#333;border-radius:3px;overflow:hidden;}
+.spl-bar{height:100%;background:linear-gradient(90deg,var(--gold),var(--ember));width:0;animation:sload 2.8s ease-in-out forwards;}
+@keyframes sload{to{width:100%;}}
 
-        /* ПЕРСОНАЖ (СПРАЙТ) */
-        #char-box {
-            position: absolute; bottom: 15%; width: 160px; height: 160px;
-            overflow: hidden; pointer-events: none;
-        }
-        #sprite {
-            width: 1600px; /* 10 кадров по 160px */
-            height: 100%;
-            background: url('neanderthal_sheet.webp') no-repeat;
-            background-size: cover; background-position: 0 0;
-        }
+/* ── ИГРА ── */
+#game{display:none;flex-direction:column;width:100%;height:100%;
+  border:clamp(8px,1.8vw,15px) solid transparent;
+  border-image-source:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Crect width='90' height='90' fill='%230e1a08'/%3E%3Cpath d='M0 45 C12 32 22 18 38 12 C52 6 58 20 52 34 C46 48 32 44 28 58 C24 72 38 82 52 72 C66 62 70 48 84 42 C90 39 90 45 90 45' stroke='%233d7a22' stroke-width='4.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M45 0 C32 12 18 22 12 38 C6 52 20 58 34 52 C48 46 44 32 58 28 C72 24 82 38 72 52 C62 66 48 70 42 84 C39 90 45 90 45 90' stroke='%233d7a22' stroke-width='4.5' fill='none' stroke-linecap='round'/%3E%3Cellipse cx='40' cy='14' rx='10' ry='6' fill='%234a9a28' transform='rotate(-35 40 14)'/%3E%3Cellipse cx='56' cy='36' rx='9' ry='5.5' fill='%2362bb3a' transform='rotate(28 56 36)'/%3E%3Cellipse cx='30' cy='60' rx='8' ry='5' fill='%234a9a28' transform='rotate(-18 30 60)'/%3E%3Cellipse cx='54' cy='76' rx='10' ry='6' fill='%2362bb3a' transform='rotate(44 54 76)'/%3E%3Cellipse cx='16' cy='38' rx='8' ry='5' fill='%234a9a28' transform='rotate(18 16 38)'/%3E%3Cellipse cx='76' cy='54' rx='9' ry='5.5' fill='%2362bb3a' transform='rotate(-28 76 54)'/%3E%3Ccircle cx='50' cy='10' r='3.5' fill='%23b03020'/%3E%3Ccircle cx='28' cy='74' r='3' fill='%23b03020'/%3E%3Ccircle cx='82' cy='46' r='3' fill='%23c0392b'/%3E%3Ccircle cx='62' cy='88' r='3.5' fill='%23b03020'/%3E%3C/svg%3E");
+  border-image-slice:30;
+  border-image-repeat:round;
+}
 
-        /* МАГАЗИН (SHOP) */
-        #shop { 
-            flex: 1; min-width: 300px; background: rgba(10, 10, 10, 0.95);
-            border-left: 6px solid #222; padding: 15px;
-            display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
-        }
+/* ── 1. ТОП-ПАНЕЛЬ (2 строки) ── */
+#top-panel{background:rgba(10,8,4,.95);border-bottom:2px solid var(--gold);display:flex;flex-direction:column;flex-shrink:0;padding:clamp(4px,1vh,8px) clamp(8px,2.5vw,16px) clamp(3px,.8vh,6px);}
+#top-row1{display:flex;align-items:center;gap:clamp(6px,2vw,12px);width:100%;}
+#btn-mute{width:clamp(26px,6.5vw,36px);height:clamp(26px,6.5vw,36px);background:rgba(232,200,74,.1);border:1.5px solid var(--gold);border-radius:8px;color:var(--gold);font-size:clamp(12px,3.2vw,17px);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s;}
+#btn-mute:active{background:rgba(232,200,74,.3);}
+#epoch-block{display:flex;flex-direction:column;align-items:flex-start;flex-shrink:0;}
+#epoch-title{font-family:'Cinzel',serif;font-size:clamp(10px,2.8vw,15px);color:var(--gold2);text-shadow:0 0 8px rgba(232,200,74,.5);white-space:nowrap;line-height:1.1;}
+#epoch-sub{font-size:clamp(7px,1.8vw,10px);color:#8a7a5a;white-space:nowrap;}
+/* ТАБЛО ОЧКОВ в топ-панели */
+#top-score{display:flex;align-items:baseline;gap:5px;margin:0 auto;}
+#score-main{font-family:'Cinzel',serif;font-size:clamp(22px,7vw,42px);color:var(--gold2);text-shadow:0 0 14px rgba(255,215,0,.6);line-height:1;}
+#score-main.bump{animation:bump .15s ease;}
+@keyframes bump{0%,100%{transform:scale(1);}50%{transform:scale(1.13);}}
+#score-unit{font-size:clamp(11px,2.8vw,16px);color:var(--gold);opacity:.8;font-family:'Cinzel',serif;}
+/* РЕЙТИНГ — вторая строка */
+#top-row2{display:flex;align-items:center;justify-content:center;gap:clamp(4px,1.8vw,9px);width:100%;margin-top:clamp(2px,.5vh,5px);}
+.rank-pill{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.04);border:1px solid rgba(232,200,74,.25);border-radius:6px;padding:clamp(1px,.5vh,3px) clamp(5px,1.8vw,10px);transition:border-color .3s,background .3s;flex:1;justify-content:center;max-width:120px;}
+.rank-pill.lead{border-color:var(--gold);background:rgba(232,200,74,.12);}
+.rank-pill.you{border-color:var(--neon);background:rgba(0,212,255,.1);}
+.rp-name{font-family:'Cinzel',serif;font-size:clamp(7px,1.8vw,10px);color:#aaa;white-space:nowrap;}
+.rp-sep{color:#555;font-size:10px;}
+.rp-score{font-size:clamp(9px,2.3vw,12px);font-weight:700;color:var(--gold);white-space:nowrap;}
+.rank-pill.you .rp-name{color:var(--neon);}
+.rank-pill.you .rp-score{color:var(--neon);}
 
-        /* АДАПТИВНОСТЬ ДЛЯ МОБИЛОК (ВЕРТИКАЛЬНАЯ) */
-        @media (max-width: 850px) {
-            #main-container { flex-direction: column; }
-            #shop { border-left: none; border-top: 6px solid #222; min-width: 100%; height: 40%; }
-            #viewport { flex: 1.5; }
-        }
+/* ── 2. СЦЕНА ── */
+#scene{height:var(--scene-h);flex-shrink:0;background:url('ui1.png') center center/cover no-repeat;position:relative;overflow:hidden;}
+#scene-ov{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,rgba(10,8,4,.65) 100%);}
 
-        /* UI ЭЛЕМЕНТЫ */
-        #top-hub {
-            width: 90%; background: rgba(0,0,0,0.8); margin-top: 15px;
-            padding: 8px 15px; border-radius: 12px; display: flex;
-            justify-content: space-between; align-items: center;
-            border: 2px solid #333; z-index: 10;
-        }
-        .score-val { color: var(--neon); font-size: 22px; text-shadow: var(--glow); }
+/* Частицы */
+.spark{position:absolute;pointer-events:none;width:6px;height:6px;border-radius:50%;background:var(--gold2);animation:sfx .45s ease-out forwards;}
+@keyframes sfx{0%{transform:translate(0,0) scale(1);opacity:1;}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0;}}
+.float-sc{position:absolute;pointer-events:none;font-family:'Cinzel',serif;font-size:clamp(13px,3.5vw,19px);font-weight:700;color:var(--gold2);text-shadow:0 0 8px rgba(255,215,0,.8);animation:flt .7s ease-out forwards;z-index:10;}
+.float-sc.w{color:var(--moss);text-shadow:0 0 8px rgba(106,181,90,.8);}
+.float-sc.f{color:var(--ember);text-shadow:0 0 8px rgba(255,107,26,.8);}
+.float-sc.b{color:#e060a0;text-shadow:0 0 8px rgba(220,80,140,.8);}
+@keyframes flt{0%{transform:translateY(0);opacity:1;}100%{transform:translateY(-55px);opacity:0;}}
 
-        .plate {
-            background: #151515; border: 2px solid #333; padding: 10px;
-            border-radius: 8px; transition: 0.3s;
-        }
-        .plate.locked { opacity: 0.4; pointer-events: none; }
-        .plate.ready { opacity: 1; pointer-events: auto; border-color: var(--gold); }
+/* ── 3. СРЕДНЯЯ ЗОНА ── */
+#mid-zone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--gap) clamp(10px,3vw,20px);gap:var(--gap);background:rgba(10,8,4,.87);overflow:hidden;}
+#boost-badge{display:none;align-items:center;background:rgba(255,107,26,.2);border:1.5px solid var(--ember);border-radius:20px;padding:2px 10px;font-size:clamp(9px,2.2vw,12px);color:var(--ember);font-family:'Cinzel',serif;letter-spacing:1px;animation:flk .8s ease-in-out infinite alternate;}
+#boost-badge.on{display:flex;}
+@keyframes flk{from{opacity:.7;}to{opacity:1;}}
+#tap-buttons{display:grid;grid-template-columns:1fr 1fr;gap:clamp(6px,2vw,12px);width:100%;max-width:420px;}
+.tap-btn{height:var(--btn-h);border-radius:var(--r);border:2.5px solid;cursor:pointer;font-family:'Cinzel',serif;font-size:clamp(9px,2.6vw,14px);font-weight:700;letter-spacing:.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:transform .1s;position:relative;overflow:hidden;}
+.tap-btn:active{transform:scale(.92);}
+.t-icon{font-size:clamp(16px,4.5vw,24px);}
+.t-lbl{font-size:clamp(7px,1.8vw,10px);opacity:.75;}
+#btn-stone{background:linear-gradient(145deg,#2d2820 0%,#1a1510 100%);border-color:#8a7050;color:var(--parch);box-shadow:0 4px 14px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);}
+#btn-stone .t-lbl{color:#b09878;}
+#btn-wood{background:linear-gradient(145deg,#2a1e0e 0%,#180f04 100%);border-color:var(--moss);color:var(--parch);box-shadow:0 4px 14px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);}
+#btn-wood .t-lbl{color:var(--moss);}
+#btn-fire{background:linear-gradient(145deg,#3a1800 0%,#1e0a00 100%);border-color:var(--ember);color:var(--parch);box-shadow:0 4px 14px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);}
+#btn-fire .t-lbl{color:var(--ember);}
+#btn-berry{background:linear-gradient(145deg,#2a0a1a 0%,#14060e 100%);border-color:#c0406a;color:var(--parch);box-shadow:0 4px 14px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);}
+#btn-berry .t-lbl{color:#e06090;}
 
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
-        .buy-btn {
-            background: #222; border: 1px solid #444; color: #fff;
-            padding: 8px 4px; font-size: 10px; cursor: pointer; text-transform: uppercase;
-        }
-        .ad-btn { background: #111; border: 1px solid var(--gold); color: var(--gold); padding: 10px; flex: 1; cursor: pointer; font-size: 10px; }
-    </style>
+/* ── 4. БЕГУЩАЯ СТРОКА ── */
+#ticker{height:var(--tick-h);background:rgba(0,0,0,.9);border-top:2px solid rgba(0,212,255,.5);border-bottom:1.5px solid rgba(0,212,255,.25);display:flex;align-items:center;overflow:hidden;flex-shrink:0;}
+#tick-txt{white-space:nowrap;font-size:clamp(12px,3vw,16px);color:var(--neon);animation:mq 24s linear infinite;font-family:'Cinzel',serif;letter-spacing:1.5px;padding-left:100%;}
+@keyframes mq{from{transform:translateX(0);}to{transform:translateX(-200%);}}
+
+/* ── 5. РЕКЛАМА ── */
+#ad-zone{display:flex;gap:clamp(6px,2vw,10px);padding:clamp(5px,1.2vh,9px) clamp(10px,3vw,18px);background:rgba(4,3,1,.97);border-top:1px solid rgba(232,200,74,.2);flex-shrink:0;}
+.ad-btn{flex:1;height:var(--ad-h);border-radius:var(--r);border:2px solid;cursor:pointer;font-family:'Cinzel',serif;font-size:clamp(8px,2.2vw,12px);font-weight:700;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;gap:6px;text-transform:uppercase;transition:transform .15s;}
+.ad-btn:active{transform:scale(.95);}
+.ad-btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;}
+.ad-tag{font-size:clamp(7px,1.7vw,9px);padding:1px 5px;border-radius:4px;font-weight:700;letter-spacing:1px;}
+#adb-boost{background:rgba(255,107,26,.1);border-color:var(--ember);color:var(--ember);}
+#adb-boost .ad-tag{background:var(--ember);color:#fff;}
+#adb-raid{background:rgba(0,212,255,.07);border-color:var(--neon);color:var(--neon);}
+#adb-raid .ad-tag{background:var(--neon);color:#000;}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:calc(var(--top-h) + 10px);left:50%;transform:translateX(-50%);background:rgba(10,8,4,.96);border:1.5px solid var(--gold);border-radius:10px;padding:7px 18px;font-family:'Cinzel',serif;font-size:clamp(10px,2.8vw,14px);color:var(--gold2);z-index:500;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .3s;}
+#toast.on{opacity:1;}
+
+/* ── АДАПТИВ (очень маленький landscape – на случай если игра открыта не вертикально) ── */
+@media screen and (max-height:440px){
+  :root{--top-h:50px;--scene-h:90px;--btn-h:40px;--tick-h:28px;--ad-h:34px;--gap:3px;}
+}
+@media screen and (min-width:600px) and (max-width:900px){
+  :root{--scene-h:clamp(180px,38vw,320px);}
+}
+@media screen and (min-width:900px){
+  #game{max-width:480px;margin:0 auto;}
+}
+</style>
 </head>
-<body onclick="startAudio()">
+<body>
 
-    <div id="loader">
-        <img src="Logo.png" alt="Logo">
-        <div class="bar"><div class="fill"></div></div>
+<!-- ЗАСТАВКА -->
+<div id="splash">
+  <img src="Logo.png" alt="Logo" onerror="this.style.display='none'">
+  <div class="spl-title">DAWN OF CIVILIZATION</div>
+  <div class="spl-bar-w"><div class="spl-bar"></div></div>
+</div>
+
+<!-- ИГРА -->
+<div id="game">
+
+  <!-- 1. ТОП -->
+  <div id="top-panel">
+    <div id="top-row1">
+      <button id="btn-mute" onclick="toggleMute()">🔊</button>
+      <div id="epoch-block">
+        <div id="epoch-title">⚔ КАМЕННЫЙ ВЕК</div>
+        <div id="epoch-sub">Рейтинг племён</div>
+      </div>
+      <div id="top-score">
+        <div id="score-main">0</div>
+        <div id="score-unit">⚡</div>
+      </div>
     </div>
-
-    <div id="main-container">
-        <div id="viewport" onclick="doTap()">
-            <div id="top-hub">
-                <div class="score-val" id="score">0⚡</div>
-                <div style="color:var(--gold); font-size: 12px;">STONE AGE</div>
-                <button onclick="event.stopPropagation(); toggleMute()" style="background:none; border:none; color:white; cursor:pointer;">🔊</button>
-            </div>
-
-            <div id="char-box">
-                <div id="sprite"></div>
-            </div>
-            
-            <div style="position:absolute; bottom:5%; font-size:10px; opacity:0.4;">TAP TO EVOLVE</div>
-        </div>
-
-        <div id="shop">
-            <div class="plate locked" id="block1">
-                <div style="font-size:11px; margin-bottom:5px;">TOOLS (30 CLICKS)</div>
-                <div class="btn-grid">
-                    <button class="buy-btn" onclick="buy(50, 2)">AXE (50⚡)</button>
-                    <button class="buy-btn" onclick="buy(200, 5)">SPEAR (200⚡)</button>
-                </div>
-            </div>
-
-            <div class="plate locked" id="block2">
-                <div style="font-size:11px; margin-bottom:5px;">FIRE (2000 CLICKS)</div>
-                <div class="btn-grid">
-                    <button class="buy-btn" onclick="buy(3000, 50)">FRICTION (3k⚡)</button>
-                    <button class="buy-btn" onclick="buy(10000, 200)">CAMPFIRE (10k⚡)</button>
-                </div>
-            </div>
-
-            <div style="display:flex; gap:8px; margin-top:auto; padding-top:10px;">
-                <button class="ad-btn" onclick="watchAd(1.5)">[AD] BONUS x1.5</button>
-                <button class="ad-btn" onclick="watchAd(2)" style="border-color:var(--neon); color:var(--neon);">[AD] RAID x2</button>
-            </div>
-        </div>
+    <div id="top-row2">
+      <div class="rank-pill" id="rp0"><div class="rp-name">ПЛЕМЯ</div><div class="rp-sep">·</div><div class="rp-score" id="rs0">0</div></div>
+      <div class="rank-pill you" id="rp1"><div class="rp-name">ВЫ</div><div class="rp-sep">·</div><div class="rp-score" id="rs1">0</div></div>
+      <div class="rank-pill" id="rp2"><div class="rp-name">ОРДА</div><div class="rp-sep">·</div><div class="rp-score" id="rs2">0</div></div>
     </div>
+  </div>
 
-    <audio id="bg-music" src="music.mp3" loop></audio>
+  <!-- 2. СЦЕНА -->
+  <div id="scene"><div id="scene-ov"></div></div>
 
-    <script>
-        let score = 0, power = 1, clicks = 0, adMult = 1;
-        let frame = 0;
-        const totalFrames = 10;
-        const frameSize = 160;
+  <!-- 3. СРЕДНЯЯ -->
+  <div id="mid-zone">
+    <div id="boost-badge">🔥 БУСТ x1.5</div>
+    <div id="tap-buttons">
+      <button class="tap-btn" id="btn-stone" onclick="tap(1,'s',event)">
+        <span class="t-icon">🪨</span>
+        <span>КАМЕНЬ</span>
+        <span class="t-lbl">+1 ⚡</span>
+      </button>
+      <button class="tap-btn" id="btn-wood" onclick="tap(2,'w',event)">
+        <span class="t-icon">🪵</span>
+        <span>ДЕРЕВО</span>
+        <span class="t-lbl">+2 ⚡</span>
+      </button>
+      <button class="tap-btn" id="btn-fire" onclick="tap(3,'f',event)">
+        <span class="t-icon">🔥</span>
+        <span>ОГОНЬ</span>
+        <span class="t-lbl">+3 ⚡</span>
+      </button>
+      <button class="tap-btn" id="btn-berry" onclick="tap(5,'b',event)">
+        <span class="t-icon">🍇</span>
+        <span>ЯГОДЫ</span>
+        <span class="t-lbl">+5 ⚡</span>
+      </button>
+    </div>
+  </div>
 
-        // Скрытие загрузки через 3 сек
-        window.onload = () => setTimeout(() => document.getElementById('loader').style.display = 'none', 3000);
+  <!-- 4. БЕГУЩАЯ СТРОКА -->
+  <div id="ticker">
+    <div id="tick-txt">
+      ⚡ Развивай цивилизацию! &nbsp;•&nbsp; 🪨 Камень — 1 очко &nbsp;•&nbsp; 🪵 Дерево — 2 очка &nbsp;•&nbsp; 🔥 Огонь — 3 очка &nbsp;•&nbsp; 🍇 Ягоды — 5 очков &nbsp;•&nbsp; 🔥 Буст x1.5 за рекламу &nbsp;•&nbsp; ⚔ Поход: 500–1500 ⚡ &nbsp;•&nbsp; 🏆 Стань лидером племён!
+    </div>
+  </div>
 
-        function doTap() {
-            score += power * adMult;
-            clicks++;
-            
-            // Анимация спрайта
-            frame = (frame + 1) % totalFrames;
-            document.getElementById('sprite').style.backgroundPosition = `-${frame * frameSize}px 0`;
-            
-            update();
-        }
+  <!-- 5. РЕКЛАМА -->
+  <div id="ad-zone">
+    <button class="ad-btn" id="adb-boost" onclick="doBoost()">
+      <span class="ad-tag">AD</span>
+      <span>БУСТ x1.5<br><span style="font-size:.85em;opacity:.75;">30 секунд</span></span>
+    </button>
+    <button class="ad-btn" id="adb-raid" onclick="doRaid()">
+      <span class="ad-tag">AD</span>
+      <span>ПОХОД<br><span style="font-size:.85em;opacity:.75;">500–1500 ⚡</span></span>
+    </button>
+  </div>
 
-        function update() {
-            document.getElementById('score').innerText = Math.floor(score) + '⚡';
-            
-            // Разблокировка блоков
-            if (clicks >= 30) document.getElementById('block1').className = "plate ready";
-            if (clicks >= 2000) document.getElementById('block2').className = "plate ready";
+</div>
 
-            // Визуализация доступности покупок
-            document.querySelectorAll('.buy-btn').forEach(btn => {
-                let cost = parseInt(btn.innerText.match(/\d+/));
-                if (btn.innerText.includes('k')) cost *= 1000;
-                btn.style.borderColor = score >= cost ? "var(--neon)" : "#444";
-                btn.style.color = score >= cost ? "#fff" : "#666";
-            });
-        }
+<div id="toast"></div>
+<audio id="bgm" src="music.mp3" loop></audio>
 
-        function buy(cost, p) {
-            event.stopPropagation();
-            if (score >= cost) {
-                score -= cost;
-                power += p;
-                update();
-            }
-        }
+<script>
+let score = 0, muted = false, boosted = false, boostTO = null, clicks = 0;
+const rivals = [{name:'ПЛЕМЯ',score:0,rate:.65},{name:'ОРДА',score:0,rate:.42}];
 
-        function watchAd(m) {
-            event.stopPropagation();
-            alert("Ad is playing..."); // Здесь будет вызов SDK CrazyGames
-            adMult = m;
-            setTimeout(() => { adMult = 1; }, 15000);
-        }
+/* ── INIT ── */
+window.addEventListener('load', async () => {
+  try { await CrazyGames.SDK.init(); } catch(e) {}
+  setTimeout(() => {
+    const sp = document.getElementById('splash');
+    sp.style.opacity = '0';
+    setTimeout(() => { sp.style.display = 'none'; document.getElementById('game').style.display = 'flex'; }, 600);
+  }, 3100);
+  setInterval(rivalTick, 1000);
+});
 
-        function startAudio() {
-            let m = document.getElementById('bg-music');
-            if (m.paused) m.play();
-        }
+/* ── ТАП ── */
+function tap(base, type, e) {
+  const gain = Math.floor(base * (boosted ? 1.5 : 1));
+  score += gain;
+  clicks++;
+  const sm = document.getElementById('score-main');
+  sm.classList.remove('bump');
+  void sm.offsetWidth;
+  sm.classList.add('bump');
+  render();
+  spawnFloat(gain, type);
+  spawnSparks();
+  const bgm = document.getElementById('bgm');
+  if (bgm.paused && !muted) bgm.play().catch(()=>{});
+}
 
-        function toggleMute() {
-            let m = document.getElementById('bg-music');
-            m.muted = !m.muted;
-        }
-    </script>
+function spawnFloat(val, type) {
+  const sc = document.getElementById('scene');
+  const el = document.createElement('div');
+  el.className = 'float-sc' + (type==='w'?' w':type==='f'?' f':type==='b'?' b':'');
+  el.textContent = '+' + val + ' ⚡';
+  el.style.left = (Math.random() * (sc.clientWidth - 70) + 10) + 'px';
+  el.style.top  = (sc.clientHeight * (.25 + Math.random() * .35)) + 'px';
+  sc.appendChild(el);
+  setTimeout(() => el.remove(), 730);
+}
+
+function spawnSparks() {
+  const sc = document.getElementById('scene');
+  for (let i = 0; i < 5; i++) {
+    const sp = document.createElement('div');
+    sp.className = 'spark';
+    sp.style.left = (sc.clientWidth/2 + (Math.random()-.5)*sc.clientWidth*.6) + 'px';
+    sp.style.top  = (sc.clientHeight*(.35 + Math.random()*.3)) + 'px';
+    const a = Math.random()*360, d = 18 + Math.random()*38;
+    sp.style.setProperty('--dx', Math.cos(a*Math.PI/180)*d+'px');
+    sp.style.setProperty('--dy', Math.sin(a*Math.PI/180)*d+'px');
+    sc.appendChild(sp);
+    setTimeout(() => sp.remove(), 500);
+  }
+}
+
+/* ── РЕНДЕР ── */
+function fmt(n) {
+  if(n>=1e9) return (n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1)+'K';
+  return Math.floor(n)+'';
+}
+function render() {
+  document.getElementById('score-main').textContent = fmt(score);
+  const data = [
+    {id:'rp0', sid:'rs0', score:rivals[0].score, name:'ПЛЕМЯ'},
+    {id:'rp1', sid:'rs1', score:score, name:'ВЫ', you:true},
+    {id:'rp2', sid:'rs2', score:rivals[1].score, name:'ОРДА'}
+  ];
+  data.sort((a,b)=>b.score-a.score);
+  const pills = document.querySelectorAll('.rank-pill');
+  pills.forEach((p,i) => {
+    const d = data[i];
+    p.querySelector('.rp-name').textContent = d.name;
+    p.querySelector('.rp-score').textContent = fmt(d.score);
+    p.classList.remove('you','lead');
+    if (d.you) p.classList.add('you');
+    else if (i===0) p.classList.add('lead');
+  });
+}
+function rivalTick() {
+  rivals.forEach(r => r.score += r.rate * (1 + clicks*.015));
+  render();
+}
+
+/* ── МЬЮТ ── */
+function toggleMute() {
+  const bgm = document.getElementById('bgm');
+  muted = !muted;
+  muted ? bgm.pause() : bgm.play().catch(()=>{});
+  document.getElementById('btn-mute').textContent = muted ? '🔇' : '🔊';
+}
+
+/* ── БУСТ ── */
+async function doBoost() {
+  const btn = document.getElementById('adb-boost');
+  btn.disabled = true;
+  try { await CrazyGames.SDK.ad.requestAd('rewarded'); } catch(e) { await wait(1200); }
+  boosted = true;
+  document.getElementById('boost-badge').classList.add('on');
+  toast('🔥 БУСТ x1.5 АКТИВИРОВАН на 30 сек!');
+  if (boostTO) clearTimeout(boostTO);
+  boostTO = setTimeout(() => {
+    boosted = false;
+    document.getElementById('boost-badge').classList.remove('on');
+    toast('Буст завершён');
+    btn.disabled = false;
+  }, 30000);
+}
+
+/* ── ПОХОД ── */
+async function doRaid() {
+  const btn = document.getElementById('adb-raid');
+  btn.disabled = true;
+  try { await CrazyGames.SDK.ad.requestAd('rewarded'); } catch(e) { await wait(1200); }
+  const reward = Math.floor(Math.random()*1001) + 500;
+  score += reward;
+  render();
+  toast('⚔ ПОХОД УСПЕШЕН! +' + reward + ' ⚡');
+  setTimeout(() => { btn.disabled = false; }, 5000);
+}
+
+function wait(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+/* ── TOAST ── */
+let tTO;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  if(tTO) clearTimeout(tTO);
+  tTO = setTimeout(() => t.classList.remove('on'), 2800);
+}
+
+/* ── ПАУЗА ── */
+document.addEventListener('visibilitychange', () => {
+  const bgm = document.getElementById('bgm');
+  document.hidden ? bgm.pause() : (!muted && bgm.play().catch(()=>{}));
+});
+</script>
 </body>
 </html>
